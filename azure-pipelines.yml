@@ -7,9 +7,7 @@ trigger:
 - main
 
 pool:
-  name: "Azure Linux Agent"
-  demands: "ADA"
-
+  name: "Azure Linux Agent"  # Substitua pelo nome do seu pool self-hosted
 
 strategy:
   matrix:
