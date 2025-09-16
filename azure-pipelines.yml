@@ -42,107 +42,106 @@ stages:
     # Display Python version for verification
     - script: |
         python3 --version
-        pip3 --version
         which python3
       displayName: 'Display Python version'
     
-    # Upgrade pip and install dependencies
-    - script: |
-        python3 -m pip3 install --upgrade pip
-        pip3 install -r requirements.txt
-      displayName: 'Install dependencies'
-      workingDirectory: '$(Build.SourcesDirectory)'
+#     # Upgrade pip and install dependencies
+#     - script: |
+#         python3 -m pip3 install --upgrade pip
+#         pip3 install -r requirements.txt
+#       displayName: 'Install dependencies'
+#       workingDirectory: '$(Build.SourcesDirectory)'
     
-    # Install development dependencies (optional)
-    - script: |
-        pip3 install pytest pytest-cov flake8 black mypy
-      displayName: 'Install dev dependencies'
-      condition: succeeded()
+#     # Install development dependencies (optional)
+#     - script: |
+#         pip3 install pytest pytest-cov flake8 black mypy
+#       displayName: 'Install dev dependencies'
+#       condition: succeeded()
     
-    # Code formatting check with black
-    - script: |
-        black --check --diff .
-      displayName: 'Check code formatting'
-      workingDirectory: '$(Build.SourcesDirectory)'
-      continueOnError: true
+#     # Code formatting check with black
+#     - script: |
+#         black --check --diff .
+#       displayName: 'Check code formatting'
+#       workingDirectory: '$(Build.SourcesDirectory)'
+#       continueOnError: true
     
-    # Linting with flake8
-    - script: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      displayName: 'Lint with flake8'
-      workingDirectory: '$(Build.SourcesDirectory)'
-      continueOnError: true
+#     # Linting with flake8
+#     - script: |
+#         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+#         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+#       displayName: 'Lint with flake8'
+#       workingDirectory: '$(Build.SourcesDirectory)'
+#       continueOnError: true
     
-    # Type checking with mypy
-    - script: |
-        mypy . --ignore-missing-imports
-      displayName: 'Type checking with mypy'
-      workingDirectory: '$(Build.SourcesDirectory)'
-      continueOnError: true
+#     # Type checking with mypy
+#     - script: |
+#         mypy . --ignore-missing-imports
+#       displayName: 'Type checking with mypy'
+#       workingDirectory: '$(Build.SourcesDirectory)'
+#       continueOnError: true
     
-    # Run tests with pytest
-    - script: |
-        pytest tests/ -v --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
-      displayName: 'Run tests'
-      workingDirectory: '$(Build.SourcesDirectory)'
+#     # Run tests with pytest
+#     - script: |
+#         pytest tests/ -v --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+#       displayName: 'Run tests'
+#       workingDirectory: '$(Build.SourcesDirectory)'
     
-    # Publish test results
-    - task: PublishTestResults@2
-      condition: succeededOrFailed()
-      inputs:
-        testResultsFiles: '**/test-*.xml'
-        testRunTitle: 'Python Tests'
-        failTaskOnFailedTests: true
-      displayName: 'Publish test results'
+#     # Publish test results
+#     - task: PublishTestResults@2
+#       condition: succeededOrFailed()
+#       inputs:
+#         testResultsFiles: '**/test-*.xml'
+#         testRunTitle: 'Python Tests'
+#         failTaskOnFailedTests: true
+#       displayName: 'Publish test results'
     
-    # Publish code coverage results
-    - task: PublishCodeCoverageResults@2
-      inputs:
-        #codeCoverageTool: Cobertura
-        summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
-        #reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
-      displayName: 'Publish coverage results'
+#     # Publish code coverage results
+#     - task: PublishCodeCoverageResults@2
+#       inputs:
+#         #codeCoverageTool: Cobertura
+#         summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+#         #reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+#       displayName: 'Publish coverage results'
     
-    # Build package/artifact (if needed)
-    - script: |
-        python3 setup.py sdist bdist_wheel
-      displayName: 'Build package'
-      workingDirectory: '$(Build.SourcesDirectory)'
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+#     # Build package/artifact (if needed)
+#     - script: |
+#         python3 setup.py sdist bdist_wheel
+#       displayName: 'Build package'
+#       workingDirectory: '$(Build.SourcesDirectory)'
+#       condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     
-    # Publish build artifacts
-    - task: PublishBuildArtifacts@1
-      inputs:
-        pathToPublish: '$(Build.SourcesDirectory)/dist'
-        artifactName: 'python-package'
-        publishLocation: 'Container'
-      displayName: 'Publish artifacts'
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+#     # Publish build artifacts
+#     - task: PublishBuildArtifacts@1
+#       inputs:
+#         pathToPublish: '$(Build.SourcesDirectory)/dist'
+#         artifactName: 'python-package'
+#         publishLocation: 'Container'
+#       displayName: 'Publish artifacts'
+#       condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
-# Optional: Deployment stage
-- stage: Deploy
-  displayName: 'Deploy'
-  dependsOn: Build
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-  jobs:
-  - deployment: DeployJob
-    displayName: 'Deploy Python Application'
-    environment: 'production'  # Define your environment in Azure DevOps
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: DownloadBuildArtifacts@0
-            inputs:
-              buildType: 'current'
-              downloadType: 'single'
-              artifactName: 'python-package'
-              downloadPath: '$(System.ArtifactsDirectory)'
-            displayName: 'Download artifacts'
+# # Optional: Deployment stage
+# - stage: Deploy
+#   displayName: 'Deploy'
+#   dependsOn: Build
+#   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+#   jobs:
+#   - deployment: DeployJob
+#     displayName: 'Deploy Python Application'
+#     environment: 'production'  # Define your environment in Azure DevOps
+#     strategy:
+#       runOnce:
+#         deploy:
+#           steps:
+#           - task: DownloadBuildArtifacts@0
+#             inputs:
+#               buildType: 'current'
+#               downloadType: 'single'
+#               artifactName: 'python-package'
+#               downloadPath: '$(System.ArtifactsDirectory)'
+#             displayName: 'Download artifacts'
           
-          - script: |
-              # Your deployment commands here
-              echo "Deploying Python application..."
-              # pip install $(System.ArtifactsDirectory)/python-package/*.whl
-            displayName: 'Deploy application'
+#           - script: |
+#               # Your deployment commands here
+#               echo "Deploying Python application..."
+#               # pip install $(System.ArtifactsDirectory)/python-package/*.whl
+#             displayName: 'Deploy application'
