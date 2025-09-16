@@ -50,14 +50,14 @@ stages:
     
     # Display Python version for verification
     - script: |
-        python --version
+        python3 --version
         pip --version
-        which python
+        which python3
       displayName: 'Display Python version'
     
     # Upgrade pip and install dependencies
     - script: |
-        python -m pip install --upgrade pip
+        python3 -m pip install --upgrade pip
         pip install -r requirements.txt
       displayName: 'Install dependencies'
       workingDirectory: '$(projectRoot)'
@@ -115,7 +115,7 @@ stages:
     
     # Build package/artifact (if needed)
     - script: |
-        python setup.py sdist bdist_wheel
+        python3 setup.py sdist bdist_wheel
       displayName: 'Build package'
       workingDirectory: '$(projectRoot)'
       condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
