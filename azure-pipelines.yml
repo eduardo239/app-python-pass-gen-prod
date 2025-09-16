@@ -42,20 +42,20 @@ stages:
     # Display Python version for verification
     - script: |
         python3 --version
-        pip3 --version
+        pip --version
         which python3
       displayName: 'Display Python version'
     
     # Upgrade pip and install dependencies
     - script: |
         python3 -m pip install --upgrade pip
-        pip3 install -r requirements.txt
+        pip install -r requirements.txt
       displayName: 'Install dependencies'
       workingDirectory: '$(Build.SourcesDirectory)'
     
     # Install development dependencies (optional)
     - script: |
-        pip3 install pytest pytest-cov flake8 black mypy
+        pip install pytest pytest-cov flake8 black mypy
       displayName: 'Install dev dependencies'
       condition: succeeded()
     
@@ -144,5 +144,5 @@ stages:
           - script: |
               # Your deployment commands here
               echo "Deploying Python application..."
-              # pip3 install $(System.ArtifactsDirectory)/python-package/*.whl
+              # pip install $(System.ArtifactsDirectory)/python-package/*.whl
             displayName: 'Deploy application'
