@@ -7,7 +7,9 @@ trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: "Azure Linux Agent"
+  demands: "ADA"
+
 
 strategy:
   matrix:
