@@ -3,37 +3,155 @@
 # Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
+
+# Azure DevOps Pipeline for Python on Self-Hosted Agent
 trigger:
-- main
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    exclude:
+    - README.md
+    - docs/*
 
 pool:
   name: "Azure Linux Agent"
 
-strategy:
-  matrix:
-    Python38:
-      python.version: '3.8'
-    Python39:
-      python.version: '3.9'
-    Python310:
-      python.version: '3.10'
-    Python311:
-      python.version: '3.11'
-    Python312:
-      python.version: '3.12'
+# strategy:
+#   matrix:
+#     Python38:
+#       python.version: '3.8'
+#     Python39:
+#       python.version: '3.9'
+#     Python310:
+#       python.version: '3.10'
+#     Python311:
+#       python.version: '3.11'
+#     Python312:
+#       python.version: '3.12'
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
+stages:
+- stage: Build
+  displayName: 'Build and Test'
+  jobs:
+  - job: BuildJob
+    displayName: 'Python Build Job'
+    steps:
+    
+    # Use Python version (if using Microsoft-hosted occasionally)
+    # For self-hosted, ensure Python is pre-installed on agent
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+        addToPath: true
+      displayName: 'Use Python $(pythonVersion)'
+      condition: eq(variables['Agent.Type'], 'hosted')
+    
+    # Display Python version for verification
+    - script: |
+        python --version
+        pip --version
+        which python
+      displayName: 'Display Python version'
+    
+    # Upgrade pip and install dependencies
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+      displayName: 'Install dependencies'
+      workingDirectory: '$(projectRoot)'
+    
+    # Install development dependencies (optional)
+    - script: |
+        pip install pytest pytest-cov flake8 black mypy
+      displayName: 'Install dev dependencies'
+      condition: succeeded()
+    
+    # Code formatting check with black
+    - script: |
+        black --check --diff .
+      displayName: 'Check code formatting'
+      workingDirectory: '$(projectRoot)'
+      continueOnError: true
+    
+    # Linting with flake8
+    - script: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      displayName: 'Lint with flake8'
+      workingDirectory: '$(projectRoot)'
+      continueOnError: true
+    
+    # Type checking with mypy
+    - script: |
+        mypy . --ignore-missing-imports
+      displayName: 'Type checking with mypy'
+      workingDirectory: '$(projectRoot)'
+      continueOnError: true
+    
+    # Run tests with pytest
+    - script: |
+        pytest tests/ -v --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+      displayName: 'Run tests'
+      workingDirectory: '$(projectRoot)'
+    
+    # Publish test results
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFiles: '**/test-*.xml'
+        testRunTitle: 'Python Tests'
+        failTaskOnFailedTests: true
+      displayName: 'Publish test results'
+    
+    # # Publish code coverage results
+    # - task: PublishCodeCoverageResults@1
+    #   inputs:
+    #     codeCoverageTool: Cobertura
+    #     summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+    #     reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+    #   displayName: 'Publish coverage results'
+    
+    # Build package/artifact (if needed)
+    - script: |
+        python setup.py sdist bdist_wheel
+      displayName: 'Build package'
+      workingDirectory: '$(projectRoot)'
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    
+    # Publish build artifacts
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(projectRoot)/dist'
+        artifactName: 'python-package'
+        publishLocation: 'Container'
+      displayName: 'Publish artifacts'
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
-- script: |
-    python3 -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Install dependencies'
-
-- script: |
-    pip install pytest pytest-azurepipelines
-    pytest
-  displayName: 'pytest'
+# Optional: Deployment stage
+- stage: Deploy
+  displayName: 'Deploy'
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployJob
+    displayName: 'Deploy Python Application'
+    environment: 'production'  # Define your environment in Azure DevOps
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'python-package'
+              downloadPath: '$(System.ArtifactsDirectory)'
+            displayName: 'Download artifacts'
+          
+          - script: |
+              # Your deployment commands here
+              echo "Deploying Python application..."
+              # pip install $(System.ArtifactsDirectory)/python-package/*.whl
+            displayName: 'Deploy application'
