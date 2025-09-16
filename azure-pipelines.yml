@@ -42,20 +42,20 @@ stages:
     # Display Python version for verification
     - script: |
         python3 --version
-        pip --version
+        pip3 --version
         which python3
       displayName: 'Display Python version'
     
     # Upgrade pip and install dependencies
     - script: |
-        python3 -m pip install --upgrade pip
-        pip install -r requirements.txt
+        python3 -m pip3 install --upgrade pip
+        pip3 install -r requirements.txt
       displayName: 'Install dependencies'
       workingDirectory: '$(Build.SourcesDirectory)'
     
     # Install development dependencies (optional)
     - script: |
-        pip install pytest pytest-cov flake8 black mypy
+        pip3 install pytest pytest-cov flake8 black mypy
       displayName: 'Install dev dependencies'
       condition: succeeded()
     
