@@ -43,16 +43,15 @@ stages:
     - script: |
         python3 --version
         which python3
-        pip3 --version
-        pip --version
       displayName: 'Display Python version'
     
-#     # Upgrade pip and install dependencies
-#     - script: |
-#         python3 -m pip3 install --upgrade pip
-#         pip3 install -r requirements.txt
-#       displayName: 'Install dependencies'
-#       workingDirectory: '$(Build.SourcesDirectory)'
+    # Upgrade pip and install dependencies
+    - script: |
+        python3 -m pip3 install --upgrade pip
+        source ./.venv/bin/activate && pip list
+        pip install -r requirements.txt
+      displayName: 'Install dependencies'
+      workingDirectory: '$(Build.SourcesDirectory)'
     
 #     # Install development dependencies (optional)
 #     - script: |
