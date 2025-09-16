@@ -54,11 +54,11 @@ stages:
       displayName: 'Install dependencies'
       workingDirectory: '$(Build.SourcesDirectory)'
     
-#     # Install development dependencies (optional)
-#     - script: |
-#         pip3 install pytest pytest-cov flake8 black mypy
-#       displayName: 'Install dev dependencies'
-#       condition: succeeded()
+    # Install development dependencies (optional)
+    - script: |
+        pip install pytest pytest-cov flake8 black mypy
+      displayName: 'Install dev dependencies'
+      condition: succeeded()
     
 #     # Code formatting check with black
 #     - script: |
