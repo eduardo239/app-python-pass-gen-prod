@@ -43,6 +43,8 @@ stages:
     - script: |
         python3 --version
         which python3
+        pip3 --version
+        pip --version
       displayName: 'Display Python version'
     
 #     # Upgrade pip and install dependencies
